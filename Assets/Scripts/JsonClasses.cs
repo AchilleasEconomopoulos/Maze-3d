@@ -28,7 +28,7 @@ public class StepResponse : RequestResponse
     public bool done;
     public int fps;
     public float duration_pause;
-    public float distance_from_goal;
+    public float[] distance_from_goal;
     public int human_action;
     public int agent_action;
     public string command = "step";

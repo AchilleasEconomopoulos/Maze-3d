@@ -52,7 +52,7 @@ public class Agent : MonoBehaviour
         while (true)
         {
             var res = UnityWebRequest.Get(HOST + "/env_variables");
-            
+
             yield return res.SendWebRequest();
             if (!is_request_success(res))
             {
@@ -79,7 +79,7 @@ public class Agent : MonoBehaviour
             }
             // if host returned the configuration file save it to game_config
             game_config = JsonUtility.FromJson<GameConfig>(res.downloadHandler.text);
-            
+
             print(res.downloadHandler.text);
             print("Setting Config");
             break;
@@ -109,7 +109,7 @@ public class Agent : MonoBehaviour
             yield return new WaitForSeconds(.01f);
         }
         else
-        {   
+        {
             //print("Getting new actions here");
             command_request = JsonUtility.FromJson<CommandRequest>(res.downloadHandler.text);
             //print("CommandRequest: " + res.downloadHandler.text);
@@ -135,124 +135,124 @@ public class Agent : MonoBehaviour
             switch (state)
             {
                 case "start":
-                {
-                    freeze_game = true;
-                    yield return do_command_request("GET", "/player_ready");
-                    break;
-                }
+                    {
+                        freeze_game = true;
+                        yield return do_command_request("GET", "/player_ready");
+                        break;
+                    }
                 case "reset":
-                {
-                    reset_response = new ResetResponse {observation = get_observation()};     // set the response with the initial observation of the environment
-                    reset_response.pause = on_pause;
-                    yield return do_command_request("POST", "/reset_done", reset_response.to_json(), () =>
                     {
-                        episode_paused_time = 0;
-                        pause_time = 0;
-                        episode_started = DateTime.Now;
-                    });     // send the response
-                    freeze_game = true;   // freeze the game
-                    is_done = false;    // game will start
-                    break;
-                }
+                        reset_response = new ResetResponse {observation = get_observation()};     // set the response with the initial observation of the environment
+                        reset_response.pause = on_pause;
+                        yield return do_command_request("POST", "/reset_done", reset_response.to_json(), () =>
+                        {
+                            episode_paused_time = 0;
+                            pause_time = 0;
+                            episode_started = DateTime.Now;
+                        });     // send the response
+                        freeze_game = true;   // freeze the game
+                        is_done = false;    // game will start
+                        break;
+                    }
                 case "testreset":
-                {
-                    reset_response = new ResetResponse {observation = get_observation()};     // set the response with the initial observation of the environment
-                    reset_response.pause = on_pause;
-                    //print("reset response is set");
-                    yield return do_command_request("POST", "/reset_done", reset_response.to_json(), () =>
                     {
-                        episode_paused_time = 0;
-                        pause_time = 0;
-                        episode_started = DateTime.Now;
-                    });     // send the response
-                    //print("reset response is sent");
-                    freeze_game = true;   // freeze the game
-                    is_done = false;    // game will start
-                    break;
-                }
+                        reset_response = new ResetResponse {observation = get_observation()};     // set the response with the initial observation of the environment
+                        reset_response.pause = on_pause;
+                        //print("reset response is set");
+                        yield return do_command_request("POST", "/reset_done", reset_response.to_json(), () =>
+                        {
+                            episode_paused_time = 0;
+                            pause_time = 0;
+                            episode_started = DateTime.Now;
+                        });     // send the response
+                                //print("reset response is sent");
+                        freeze_game = true;   // freeze the game
+                        is_done = false;    // game will start
+                        break;
+                    }
                 case "step":
-                {
-                    freeze_game = false;    // unfreeze the game
-                    //print("agent step Get observation");
-                    step_request = command_request.step_request;    // retrieve step request
-                    // calculate the duration of the action. subtract the time that the request had to travel through
-                    // internet, because during this time the action was had been executed
-                    // We assume that the deviation of two consecutive request delays is the same.
-                    var action_duration = game_config.action_duration - request_duration - 0.005f;  
-                    
-                    yield return new WaitForSeconds(action_duration < 0 ? 0 : action_duration);     // wait to execute step for "action duration" time
-                    //print("agent step after wait");
-                    set_step_response(state);
-                    //print("step_reponse is set");
-                    var start_request_time = DateTime.Now;
-                    yield return do_command_request("POST", "/observation", step_response.to_json(), () =>
                     {
-                        request_duration = (float) (DateTime.Now - start_request_time).TotalSeconds;
-                        fps_counter = 1;
-                        fps_adder = 60;
-                        episode_paused_time += pause_time;
-                        pause_time = 0;
-                        if (step_request.timed_out) TIMEOUT_UI.SetActive(true);
-                        if (!step_response.done) return;
-                        freeze_game = true;
-                        set_state("goal_reached");
-                    });     // construct the response to the step request
-                    //print("step response is sent");
-                    break;
-                }
+                        freeze_game = false;    // unfreeze the game
+                                                //print("agent step Get observation");
+                        step_request = command_request.step_request;    // retrieve step request
+                                                                        // calculate the duration of the action. subtract the time that the request had to travel through
+                                                                        // internet, because during this time the action was had been executed
+                                                                        // We assume that the deviation of two consecutive request delays is the same.
+                        var action_duration = game_config.action_duration - request_duration - 0.005f;
+
+                        yield return new WaitForSeconds(action_duration < 0 ? 0 : action_duration);     // wait to execute step for "action duration" time
+                                                                                                        //print("agent step after wait");
+                        set_step_response(state);
+                        //print("step_reponse is set");
+                        var start_request_time = DateTime.Now;
+                        yield return do_command_request("POST", "/observation", step_response.to_json(), () =>
+                        {
+                            request_duration = (float) (DateTime.Now - start_request_time).TotalSeconds;
+                            fps_counter = 1;
+                            fps_adder = 60;
+                            episode_paused_time += pause_time;
+                            pause_time = 0;
+                            if (step_request.timed_out) TIMEOUT_UI.SetActive(true);
+                            if (!step_response.done) return;
+                            freeze_game = true;
+                            set_state("goal_reached");
+                        });     // construct the response to the step request
+                                //print("step response is sent");
+                        break;
+                    }
                 case "step_two_agents":
-                {
-                    freeze_game = false;    // unfreeze the game
-                    step_request = command_request.step_request;    // retrieve step request
-                    var start_request_time = DateTime.Now;
-                    yield return new WaitForSeconds(game_config.action_duration);     // wait to execute step for "action duration" time
-                    set_step_response(state);
-                    yield return do_command_request("POST", "/observation", step_response.to_json(), () =>
                     {
-                        request_duration = (float) (DateTime.Now - start_request_time).TotalSeconds;
-                        fps_counter = 1;
-                        fps_adder = 60;
-                        episode_paused_time += pause_time;
-                        pause_time = 0;
-                        if (step_request.timed_out) TIMEOUT_UI.SetActive(true);
-                        if (!step_response.done) return;
-                        freeze_game = true;
-                        set_state("goal_reached");
-                    });     // construct the response to the step request
-                    break;
-                }
+                        freeze_game = false;    // unfreeze the game
+                        step_request = command_request.step_request;    // retrieve step request
+                        var start_request_time = DateTime.Now;
+                        yield return new WaitForSeconds(game_config.action_duration);     // wait to execute step for "action duration" time
+                        set_step_response(state);
+                        yield return do_command_request("POST", "/observation", step_response.to_json(), () =>
+                        {
+                            request_duration = (float) (DateTime.Now - start_request_time).TotalSeconds;
+                            fps_counter = 1;
+                            fps_adder = 60;
+                            episode_paused_time += pause_time;
+                            pause_time = 0;
+                            if (step_request.timed_out) TIMEOUT_UI.SetActive(true);
+                            if (!step_response.done) return;
+                            freeze_game = true;
+                            set_state("goal_reached");
+                        });     // construct the response to the step request
+                        break;
+                    }
                 case "training":
-                /*
-                 * During training in MazeRL we expect to receive a request during each cycle of the training
-                 * to keep the connenction alive and display the progress.
-                 */
-                {
-                    training_request = command_request.training_request;
-                     
-                    yield return do_command_request("GET", "/player_ready");    // handle the training request
-                    break;
-                }
+                    /*
+                     * During training in MazeRL we expect to receive a request during each cycle of the training
+                     * to keep the connenction alive and display the progress.
+                     */
+                    {
+                        training_request = command_request.training_request;
+
+                        yield return do_command_request("GET", "/player_ready");    // handle the training request
+                        break;
+                    }
                 case "finished":
                     /*
                      * the experiment has finished
                      */
-                {
-                    yield return new WaitForSeconds(5f);
-                    set_state("init");
-                    SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);  // display final scene
-                    break;
-                }
+                    {
+                        yield return new WaitForSeconds(5f);
+                        set_state("init");
+                        SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);  // display final scene
+                        break;
+                    }
                 case "goal_reached":
                     /*
                      * Goal has been reached
                      */
-                {
-                    yield return new WaitForSeconds(game_config.popup_window_time);     // wait for 'popup_window_time' seconds
-                    revert_to_prev_state(); // go to previous state
-                    TIMEOUT_UI.SetActive(false);    //  deactivate the goal message that had been displaying since goal reached
-                    freeze_game = false;    // unfreeze the game
-                    break;
-                }
+                    {
+                        yield return new WaitForSeconds(game_config.popup_window_time);     // wait for 'popup_window_time' seconds
+                        revert_to_prev_state(); // go to previous state
+                        TIMEOUT_UI.SetActive(false);    //  deactivate the goal message that had been displaying since goal reached
+                        freeze_game = false;    // unfreeze the game
+                        break;
+                    }
             }
         }
     }
@@ -264,8 +264,11 @@ public class Agent : MonoBehaviour
      */
     {
         step_response.observation = get_observation();
-        step_response.distance_from_goal =
-            Vector3.Distance(GOAL.transform.localPosition, BALL.transform.localPosition);
+        step_response.distance_from_goal = new float[] {
+            Vector3.Distance(GOAL.transform.localPosition, BALL.transform.localPosition),
+            (GOAL.transform.localPosition.z - BALL.transform.localPosition.z),
+            (GOAL.transform.localPosition.x - BALL.transform.localPosition.x)
+        };
         step_response.done = is_done ? is_done : step_request.timed_out;
 
         step_response.fps = fps_adder / fps_counter;
@@ -273,18 +276,18 @@ public class Agent : MonoBehaviour
 
         step_response.duration_pause = pause_time;
         switch (state)
-            {
-                case "step":
+        {
+            case "step":
                 {
                     step_response.human_action = input_x;
                     break;
                 }
-                case "step_two_agents":
+            case "step_two_agents":
                 {
                     step_response.human_action = step_request.second_agent_action;
                     break;
                 }
-            }
+        }
         step_response.agent_action = step_request.action_agent;
 
         if(game_config.human_only)

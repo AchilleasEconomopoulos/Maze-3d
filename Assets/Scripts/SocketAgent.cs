@@ -24,18 +24,18 @@ public class SocketAgent : MonoBehaviour
     DateTime start_time;
 
     void Start()
-    {   
+    {
         print("SocketAgent Start");
         r_ball = BALL.gameObject.GetComponent<Rigidbody>();
         step_request = new StepRequest();
     }
 
     void FixedUpdate()
-    {   
+    {
         //print("FixedUpdate");
         //print(socket_ready);
         if (!socket_ready)
-        {   
+        {
             //print("Socket not ready");
             setup_socket();
             if (socket_ready){
@@ -59,7 +59,7 @@ public class SocketAgent : MonoBehaviour
     }
 
     float[] get_observation()
-    {   
+    {
         //print("SocketAgent get_observation");
         var input_x = Input.GetAxis("Horizontal");
         var x_speed = 0f;
@@ -156,8 +156,11 @@ public class SocketAgent : MonoBehaviour
                         yield return new WaitForSeconds(.2f);
 
                     step_response.observation = get_observation();
-                    step_response.distance_from_goal =
-                        Vector3.Distance(GOAL.transform.localPosition, BALL.transform.localPosition);
+                    step_response.distance_from_goal = new float[] {
+                        Vector3.Distance(GOAL.transform.localPosition, BALL.transform.localPosition),
+                        Mathf.Abs(GOAL.transform.localPosition.z - BALL.transform.localPosition.z),
+                        Mathf.Abs(GOAL.transform.localPosition.x - BALL.transform.localPosition.x)
+                    };
                     step_response.done = is_done ? is_done : step_request.timed_out;
                     step_response.fps = 60;
                     step_response.duration_pause = 0;
@@ -210,7 +213,7 @@ public class SocketAgent : MonoBehaviour
 
 
                 //     break;
-                
+
                 default:
                     // print("AGENT default");
                     yield return new WaitForSeconds(.005f);
@@ -255,7 +258,7 @@ public class SocketAgent : MonoBehaviour
     }
 
     string read_socket()
-    {   
+    {
         print("read_socket");
         if (!socket_ready)
             return "";
@@ -275,7 +278,7 @@ public class SocketAgent : MonoBehaviour
     }
 
     void close_socket()
-    {   
+    {
         print("close_socket");
         try
         {
